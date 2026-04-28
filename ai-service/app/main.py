@@ -41,9 +41,11 @@ app = FastAPI(
 # CORS Configuration
 # Design Decision: Allow requests from Node.js backend (localhost:3000) for development
 # In production, this should be restricted to specific backend URLs
+# CORS Configuration — allow backend and localhost
 origins = [
-    "http://localhost:3000",  # Node.js backend
-    "http://127.0.0.1:3000",  # Alternative localhost format
+    "https://innerlabs-backend.onrender.com",  # Render backend
+    "http://localhost:3000",                    # local backend dev
+    "http://127.0.0.1:3000",
 ]
 
 app.add_middleware(

@@ -19,7 +19,21 @@ const app = express();
 // Middleware
 app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
-app.use(cors()); // Enable CORS for all routes
+
+// CORS — allow Vercel frontend and localhost for development
+const allowedOrigins = [
+  'https://innerlabs.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, Postman, server-to-server)
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS blocked: ${origin}`));
+  },
+  credentials: true,
+}));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
