@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Build output
+dist/
+build/
+coverage/
+*.egg-info/
+
+# Environment files (keep .env.example, ignore real .env)
+.env
+backend/.env
+frontend/.env
+ai-service/.env
+
+# Markdown docs (README kept, task/verification docs excluded)
+FRONTEND-IMPLEMENTATION-SUMMARY.md
+backend/TASK-*.md
+ai-service/TASK-*.md
+
+# Test files
+backend/tests/
+ai-service/test_*.py
+ai-service/TASK-*.py
+
+# Kiro / IDE
+.kiro/
+.vscode/
+
+# OS
+.DS_Store
+.Trash/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Lock files (optional — remove these lines if you want them tracked)
+# package-lock.json
+# package.json lock
