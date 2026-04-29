@@ -5,7 +5,7 @@ A production-ready distributed application for AI prompt processing with compreh
 ## 🏗️ Architecture
 
 ```
-┌─────────────┐
+
 │   Client    │
 └──────┬──────┘
        │ HTTP REST
@@ -263,6 +263,29 @@ HOST=0.0.0.0
 - **Backoff Strategy**: Exponential (1s, 2s)
 - **Retryable Errors**: timeout, rate_limit, network
 - **Non-Retryable Errors**: api_error (4xx), unknown
+
+## 🧠 Architecture Decisions
+
+**Why two separate services (Node.js + Python)?**
+I could have built everything in one service, but the AI processing part has a very different job from the rest of the system. The Node backend handles HTTP, database, retry logic, and orchestration — things Node is great at. The Python service does one thing: talk to the Groq API. Keeping them separate means I can swap out the AI provider, scale the AI service independently, or replace it entirely without touching the backend. It also keeps each service small and easy to reason about.
+
+**Why does retry logic live in the backend, not the AI service?**
+The backend owns the database, so it's the only place that can persist retry state. If the AI service handled retries internally, we'd have no visibility into what happened — no failure logs, no retry counts in the database. By keeping retry logic in the backend, every attempt is tracked and the request state survives even if the server restarts mid-retry.
+
+**Why save the request to the database before calling the AI service?**
+I wanted to guarantee that no request is ever lost. If I called the AI service first and then the server crashed before saving, that request would disappear completely. By writing a `pending` record first, I always have a trace of the request regardless of what happens next. The record gets updated to `success` or `failed` once the retry cycle completes.
+
+**Why log every failed attempt instead of just the final failure?**
+A single "failed after 3 attempts" message doesn't tell you much. Logging each attempt separately means I can see whether attempt 1 timed out, attempt 2 hit a rate limit, and attempt 3 got a network error — which is much more useful for debugging. It also makes it easy to spot patterns, like rate limits always happening at a specific time of day.
+
+**Why exponential backoff?**
+Linear retries (retry every 1 second) can make things worse — if the Groq API is overloaded, hammering it every second just adds more load. Exponential backoff (1s, then 2s) gives the service time to recover between attempts. It's a small thing but it's the right behaviour for a production system.
+
+**Why keep the AI service stateless?**
+The AI service holds no database connections, no session state, nothing. This means I can run multiple instances of it behind a load balancer without any coordination between them. It also makes it simpler to deploy and easier to test in isolation.
+
+**Scalability thought process**
+I didn't over-engineer this for scale, but I made sure the foundation is right. Both services are stateless, MongoDB uses a connection pool, and the services are containerised so they can be scaled horizontally if needed. The main bottleneck would be the Groq API rate limits, which the retry logic already handles gracefully.
 
 ## 🛡️ Error Handling
 
